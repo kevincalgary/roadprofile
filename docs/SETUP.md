@@ -40,8 +40,11 @@ supabase db reset       # applies every migration in supabase/migrations, then s
    supabase functions deploy delete-account
    supabase functions deploy send-push
    ```
-8. Set edge function secrets (service role key is provided automatically as `SUPABASE_SERVICE_ROLE_KEY`; no extra secrets are required for the functions as shipped).
-9. Wire the `send-push` function as a **Database Webhook**: Dashboard → Database → Webhooks → New webhook → table `notifications`, event `INSERT`, target the deployed `send-push` function URL.
+8. Set edge function secrets (service role key is provided automatically as `SUPABASE_SERVICE_ROLE_KEY`). `send-push` also needs a webhook secret so its public URL can't be called by anyone who finds it — generate one and set it:
+   ```bash
+   supabase secrets set SEND_PUSH_WEBHOOK_SECRET=$(openssl rand -hex 32)
+   ```
+9. Wire the `send-push` function as a **Database Webhook**: Dashboard → Database → Webhooks → New webhook → table `notifications`, event `INSERT`, target the deployed `send-push` function URL, and add an HTTP header `x-webhook-secret` set to the same value as `SEND_PUSH_WEBHOOK_SECRET`.
 
 ## 4. Environment variables
 

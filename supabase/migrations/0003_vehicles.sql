@@ -39,9 +39,18 @@ create trigger vehicles_touch_updated_at before update on public.vehicles
 create policy vehicles_select_public on public.vehicles
   for select using (true);
 
+-- A short-VIN exception is auto-flagged (is_flagged) for moderator review,
+-- but the exception must not appear pre-approved: a non-moderator insert
+-- can never set short_vin_exception_approved_by/_at itself (only a
+-- moderator UPDATE, guarded by guard_vehicle_protected_fields below, may).
 create policy vehicles_insert_authenticated on public.vehicles
   for insert with check (
-    auth.uid() = created_by and public.is_active_standing(auth.uid())
+    auth.uid() = created_by
+    and public.is_active_standing(auth.uid())
+    and (
+      public.current_user_is_moderator()
+      or (short_vin_exception_approved_by is null and short_vin_exception_approved_at is null)
+    )
   );
 
 -- Core identity fields (vin, merges) are moderator-controlled; any active

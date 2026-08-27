@@ -221,7 +221,11 @@ begin
     where id = p_report_id;
 
   insert into public.moderation_actions (moderator_id, target_type, target_id, action, reason, notes)
-  values (auth.uid(), 'report', p_report_id, 'dismiss_report', 'Report review: ' || p_status, p_notes);
+  values (
+    auth.uid(), 'report', p_report_id,
+    case p_status when 'resolved' then 'resolve_report' when 'dismissed' then 'dismiss_report' else 'review_report' end,
+    'Report review: ' || p_status, p_notes
+  );
 end;
 $$;
 

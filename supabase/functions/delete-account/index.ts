@@ -40,6 +40,19 @@ Deno.serve(async (req) => {
 
   const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
+  // Snapshot the current profile so the scrub below can be rolled back if
+  // account deletion subsequently fails — without this, a failed
+  // deleteUser() call after a successful scrub would leave the account
+  // permanently anonymized ("Deleted user") while still able to log in.
+  const { data: originalProfile, error: fetchError } = await adminClient
+    .from('profiles')
+    .select('username, display_name, avatar_url, location_text, bio')
+    .eq('user_id', user.id)
+    .maybeSingle();
+  if (fetchError) {
+    return new Response(JSON.stringify({ error: fetchError.message }), { status: 500 });
+  }
+
   // Anonymize the durable public profile row *before* removing the auth
   // user — public.profiles.user_id deliberately has no FK/cascade to
   // auth.users (see 0002_users_and_profiles.sql) so that the contributor
@@ -63,6 +76,10 @@ Deno.serve(async (req) => {
 
   const { error: deleteError } = await adminClient.auth.admin.deleteUser(user.id);
   if (deleteError) {
+    // Roll back the scrub so the account isn't left anonymized-but-alive.
+    if (originalProfile) {
+      await adminClient.from('profiles').update(originalProfile).eq('user_id', user.id);
+    }
     return new Response(JSON.stringify({ error: deleteError.message }), { status: 500 });
   }
 

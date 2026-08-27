@@ -101,6 +101,12 @@ create policy messages_insert_member on public.messages
     sender_id = auth.uid()
     and public.is_active_standing(auth.uid())
     and public.is_conversation_member(conversation_id, auth.uid())
+    and not exists (
+      select 1 from public.conversation_members other
+      where other.conversation_id = messages.conversation_id
+        and other.user_id <> auth.uid()
+        and public.is_blocked_pair(other.user_id, auth.uid())
+    )
   );
 
 create policy messages_update_own on public.messages

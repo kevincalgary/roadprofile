@@ -38,26 +38,38 @@ export default function ChatThread() {
   const listRef = useRef<FlatList>(null);
 
   useEffect(() => {
+    let cancelled = false;
     let unsubscribe: (() => void) | undefined;
     (async () => {
       const [msgs, { data: members }] = await Promise.all([
         getMessages(id),
         supabase.from('conversation_members').select('*').eq('conversation_id', id),
       ]);
+      if (cancelled) return;
       setMessages(msgs);
       const other = (members ?? []).find((m: any) => m.user_id !== user?.id) ?? null;
       setOtherMember(other);
       if (other) {
         const profiles = await getProfilesMap([other.user_id]);
+        if (cancelled) return;
         setOtherProfile(profiles.get(other.user_id));
       }
       await markConversationRead(id);
+      if (cancelled) return;
       unsubscribe = subscribeToConversationMessages(id, (msg) => {
         setMessages((prev) => [...prev, msg]);
         markConversationRead(id);
       });
+      // The effect's cleanup may already have run (and found `unsubscribe`
+      // still undefined) if the user navigated away before this point —
+      // guard against that by tearing the just-created subscription back
+      // down immediately instead of leaking it.
+      if (cancelled) unsubscribe();
     })();
-    return () => unsubscribe?.();
+    return () => {
+      cancelled = true;
+      unsubscribe?.();
+    };
   }, [id, user?.id]);
 
   async function handleSend() {

@@ -3,27 +3,34 @@ import { View, Text, Pressable, ActivityIndicator } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import { Feather } from '@expo/vector-icons';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
-import { uploadWithRetry } from '../../lib/api/uploads';
+import { compressImage, uploadWithRetry } from '../../lib/api/uploads';
 import { addRecordDocument } from '../../lib/api/records';
 import type { RecordDocument } from '../../lib/types/database';
 
 const REDACTION_ITEMS = ['Names', 'Home addresses', 'Phone numbers', 'Email addresses', 'Payment information', 'Account numbers', 'Signatures', 'Government ID numbers'];
 
 export function RecordDocumentPicker({ recordId, documents, onChange }: { recordId: string; documents: RecordDocument[]; onChange: (docs: RecordDocument[]) => void }) {
-  const [pendingAsset, setPendingAsset] = useState<{ uri: string; name: string } | null>(null);
+  const [pendingAsset, setPendingAsset] = useState<{ uri: string; name: string; mimeType?: string } | null>(null);
   const [uploading, setUploading] = useState(false);
 
   async function handlePick() {
     const result = await DocumentPicker.getDocumentAsync({ type: ['image/*', 'application/pdf'], copyToCacheDirectory: true });
     if (result.canceled || !result.assets?.length) return;
-    setPendingAsset({ uri: result.assets[0].uri, name: result.assets[0].name ?? 'document' });
+    setPendingAsset({ uri: result.assets[0].uri, name: result.assets[0].name ?? 'document', mimeType: result.assets[0].mimeType });
   }
 
   async function handleConfirmRedaction() {
     if (!pendingAsset) return;
     setUploading(true);
     try {
-      const { publicUrl } = await uploadWithRetry('record-documents', pendingAsset.uri, pendingAsset.name);
+      // A picked "document" can be an image (e.g. a phone photo of a
+      // receipt), which can carry EXIF/GPS metadata just like a record
+      // photo. Route it through the same stripping step before upload so
+      // the redaction dialog's "metadata is stripped automatically" claim
+      // actually holds for documents too, not just record photos.
+      const isImage = pendingAsset.mimeType?.startsWith('image/') ?? /\.(jpe?g|png|heic|heif|webp)$/i.test(pendingAsset.name);
+      const uploadUri = isImage ? (await compressImage(pendingAsset.uri)).uri : pendingAsset.uri;
+      const { publicUrl } = await uploadWithRetry('record-documents', uploadUri, pendingAsset.name);
       await addRecordDocument(recordId, publicUrl, pendingAsset.name, 'receipt', true);
       onChange([
         ...documents,

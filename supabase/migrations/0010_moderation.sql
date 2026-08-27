@@ -40,7 +40,8 @@ create table public.moderation_actions (
   target_id uuid not null,
   action text not null check (action in (
     'warn', 'suspend', 'ban', 'lift_suspension', 'remove_content', 'restore_content',
-    'merge_vehicles', 'approve_correction', 'reject_correction', 'dismiss_report'
+    'merge_vehicles', 'approve_correction', 'reject_correction',
+    'dismiss_report', 'resolve_report', 'review_report'
   )),
   reason text not null,
   notes text,

@@ -79,6 +79,7 @@ export function CommentThread({ recordId }: { recordId: string }) {
             onBlock={() => comment.author_id !== user?.id && blockUser(comment.author_id)}
             onReply={() => {
               setReplyingTo(comment.id);
+              setReplyText('');
               if (!repliesByComment.has(comment.id)) loadReplies(comment.id);
             }}
           />

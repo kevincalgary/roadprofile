@@ -3,8 +3,12 @@
 //
 // Wire-up (one-time, in the Supabase dashboard): Database > Webhooks >
 // create a webhook on public.notifications, event = INSERT, target this
-// function. Supabase signs the request; verify with the webhook secret if
-// you enable one. See docs/SETUP.md.
+// function, and add an "x-webhook-secret" HTTP header whose value matches
+// the SEND_PUSH_WEBHOOK_SECRET function secret (`supabase secrets set
+// SEND_PUSH_WEBHOOK_SECRET=...`). Without a secret configured, this
+// endpoint (necessarily deployed with --no-verify-jwt so the webhook can
+// reach it) would accept a push-send request from anyone who finds its
+// URL. See docs/SETUP.md.
 //
 // Deploy: supabase functions deploy send-push
 
@@ -34,6 +38,14 @@ interface WebhookPayload {
 }
 
 Deno.serve(async (req) => {
+  const expectedSecret = Deno.env.get('SEND_PUSH_WEBHOOK_SECRET');
+  if (expectedSecret) {
+    const providedSecret = req.headers.get('x-webhook-secret');
+    if (providedSecret !== expectedSecret) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
+    }
+  }
+
   const payload = (await req.json()) as WebhookPayload;
   const notification = payload.record;
 

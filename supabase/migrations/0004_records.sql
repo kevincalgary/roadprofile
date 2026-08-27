@@ -71,10 +71,13 @@ create policy records_update_own on public.records
   for update using (auth.uid() = author_id or public.current_user_is_moderator())
   with check (auth.uid() = author_id or public.current_user_is_moderator());
 
--- Soft delete only (author or moderator); enforced in application layer by
--- always issuing UPDATE deleted_at = now() rather than DELETE.
-create policy records_delete_own_or_mod on public.records
-  for delete using (auth.uid() = author_id or public.current_user_is_moderator());
+-- Soft delete only. Hard DELETE is intentionally not granted to authors —
+-- the app always issues UPDATE deleted_at = now() to preserve the audit/
+-- revision trail (record_revisions, record_photos, record_documents all
+-- cascade on hard delete, which would destroy that history). Only a
+-- moderator may hard-delete, for legal/compliance removals.
+create policy records_delete_mod_only on public.records
+  for delete using (public.current_user_is_moderator());
 
 -- ---------------------------------------------------------------------------
 create table public.record_revisions (

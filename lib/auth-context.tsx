@@ -43,24 +43,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let mounted = true;
 
-    supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
-      if (!mounted) return;
-      setSession(initialSession);
-      if (initialSession?.user.id) {
-        loadProfile(initialSession.user.id).finally(() => setLoading(false));
-      } else {
-        setLoading(false);
-      }
-    });
-
+    // Rely solely on onAuthStateChange, which fires once synchronously with
+    // the current session (event 'INITIAL_SESSION') and again on every
+    // subsequent change. A separate supabase.auth.getSession() call here
+    // would race this listener: if a sign-in fires onAuthStateChange before
+    // the getSession() promise resolves, its stale/null result would
+    // overwrite the correct signed-in session when it finally lands.
     const { data: subscription } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      if (!mounted) return;
       setSession(newSession);
       if (newSession?.user.id) {
-        loadProfile(newSession.user.id);
+        loadProfile(newSession.user.id).finally(() => {
+          if (mounted) setLoading(false);
+        });
       } else {
         setProfile(null);
         setAccount(null);
         setIsModerator(false);
+        setLoading(false);
       }
     });
 
