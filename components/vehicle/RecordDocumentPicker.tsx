@@ -1,0 +1,64 @@
+import React, { useState } from 'react';
+import { View, Text, Pressable, ActivityIndicator } from 'react-native';
+import * as DocumentPicker from 'expo-document-picker';
+import { Feather } from '@expo/vector-icons';
+import { ConfirmDialog } from '../ui/ConfirmDialog';
+import { uploadWithRetry } from '../../lib/api/uploads';
+import { addRecordDocument } from '../../lib/api/records';
+import type { RecordDocument } from '../../lib/types/database';
+
+const REDACTION_ITEMS = ['Names', 'Home addresses', 'Phone numbers', 'Email addresses', 'Payment information', 'Account numbers', 'Signatures', 'Government ID numbers'];
+
+export function RecordDocumentPicker({ recordId, documents, onChange }: { recordId: string; documents: RecordDocument[]; onChange: (docs: RecordDocument[]) => void }) {
+  const [pendingAsset, setPendingAsset] = useState<{ uri: string; name: string } | null>(null);
+  const [uploading, setUploading] = useState(false);
+
+  async function handlePick() {
+    const result = await DocumentPicker.getDocumentAsync({ type: ['image/*', 'application/pdf'], copyToCacheDirectory: true });
+    if (result.canceled || !result.assets?.length) return;
+    setPendingAsset({ uri: result.assets[0].uri, name: result.assets[0].name ?? 'document' });
+  }
+
+  async function handleConfirmRedaction() {
+    if (!pendingAsset) return;
+    setUploading(true);
+    try {
+      const { publicUrl } = await uploadWithRetry('record-documents', pendingAsset.uri, pendingAsset.name);
+      await addRecordDocument(recordId, publicUrl, pendingAsset.name, 'receipt', true);
+      onChange([
+        ...documents,
+        { id: `${recordId}-${documents.length}`, record_id: recordId, url: publicUrl, filename: pendingAsset.name, doc_type: 'receipt', redaction_ack: true, created_at: new Date().toISOString() },
+      ]);
+    } finally {
+      setUploading(false);
+      setPendingAsset(null);
+    }
+  }
+
+  return (
+    <View>
+      <Text className="text-sm font-medium text-charcoal dark:text-dark-text mb-1.5">Receipts, invoices, or documents (optional)</Text>
+      {documents.map((doc) => (
+        <View key={doc.id} className="flex-row items-center gap-2 py-2">
+          <Feather name="file-text" size={16} color="#5C6470" />
+          <Text numberOfLines={1} className="flex-1 text-sm text-charcoal dark:text-dark-text">{doc.filename}</Text>
+        </View>
+      ))}
+      <Pressable onPress={handlePick} accessibilityRole="button" accessibilityLabel="Add document" className="flex-row items-center gap-2 h-11 px-4 rounded-xl bg-cardgray dark:bg-dark-card self-start">
+        {uploading ? <ActivityIndicator size="small" color="#3B8C60" /> : <Feather name="paperclip" size={16} color="#5C6470" />}
+        <Text className="text-sm text-charcoal dark:text-dark-text">Add document</Text>
+      </Pressable>
+
+      <ConfirmDialog
+        visible={!!pendingAsset}
+        title="Remove personal information first"
+        description={`Before you publish this document, make sure it does not show:\n\n${REDACTION_ITEMS.join(', ')}, or any other personal information. RoadProfile strips location and camera metadata automatically, but you're responsible for what's visible on the page itself.`}
+        confirmLabel="This document is redacted, publish it"
+        cancelLabel="Cancel"
+        loading={uploading}
+        onConfirm={handleConfirmRedaction}
+        onCancel={() => setPendingAsset(null)}
+      />
+    </View>
+  );
+}

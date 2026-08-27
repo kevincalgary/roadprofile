@@ -1,0 +1,78 @@
+{
+  "expo": {
+    "name": "RoadProfile",
+    "slug": "roadprofile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "roadprofile",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "backgroundColor": "#FBF9F6",
+    "experiments": {
+      "typedRoutes": true
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "ca.truenorthernlabs.roadprofile",
+      "infoPlist": {
+        "NSCameraUsageDescription": "RoadProfile uses the camera to scan VIN barcodes and photograph vehicles, records, and documents you contribute.",
+        "NSPhotoLibraryUsageDescription": "RoadProfile needs access to your photo library so you can attach photos to posts, records, and vehicle profiles.",
+        "NSPhotoLibraryAddUsageDescription": "RoadProfile can save exported vehicle history summaries to your photo library.",
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "package": "ca.truenorthernlabs.roadprofile",
+      "adaptiveIcon": {
+        "backgroundColor": "#FBF9F6",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "CAMERA",
+        "READ_MEDIA_IMAGES"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro",
+      "output": "single",
+      "name": "RoadProfile — Crowdsourced Vehicle History",
+      "shortName": "RoadProfile",
+      "themeColor": "#62C58F",
+      "backgroundColor": "#FBF9F6"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-status-bar",
+      "expo-splash-screen",
+      "expo-image",
+      "expo-secure-store",
+      "expo-web-browser",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "RoadProfile uses the camera to scan VIN barcodes and document vehicles."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "RoadProfile needs access to your photo library to attach photos to records and posts."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/android-icon-monochrome.png",
+          "color": "#62C58F"
+        }
+      ],
+      "expo-font",
+      "expo-sharing"
+    ]
+  }
+}
