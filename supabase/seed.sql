@@ -157,6 +157,16 @@ insert into public.duplicate_vehicle_requests (vehicle_id_a, vehicle_id_b, reaso
   ('b0000000-0000-4000-8000-000000000004', 'b0000000-0000-4000-8000-000000000005', 'Flagging for review — cover photos look similar, please confirm these are distinct vehicles.', 'a0000000-0000-4000-8000-000000000002', 'pending');
 
 -- ---------------------------------------------------------------------------
+-- 9b. A warning + pending appeal so the moderator dashboard's Appeals tab
+--     and the account holder's "Account standing" screen have demo data.
+-- ---------------------------------------------------------------------------
+insert into public.moderation_actions (id, moderator_id, target_type, target_id, action, reason) values
+  ('22220000-0000-4000-8000-000000000001', 'a0000000-0000-4000-8000-000000000008', 'user', 'a0000000-0000-4000-8000-000000000007', 'warn', 'Posted a record with unverifiable performance claims.');
+
+insert into public.appeals (moderation_action_id, appellant_id, statement) values
+  ('22220000-0000-4000-8000-000000000001', 'a0000000-0000-4000-8000-000000000007', 'The dyno numbers came from the shop that did the tune — happy to share the printout if that helps.');
+
+-- ---------------------------------------------------------------------------
 -- 10. Recently viewed (for the signed-in demo user, Mara)
 -- ---------------------------------------------------------------------------
 insert into public.recently_viewed (user_id, target_type, target_id) values

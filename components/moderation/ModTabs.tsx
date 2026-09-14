@@ -1,12 +1,13 @@
 import React from 'react';
 import { ScrollView, Pressable, Text } from 'react-native';
 
-export type ModTab = 'reports' | 'vin' | 'duplicates' | 'users' | 'removals' | 'audit';
+export type ModTab = 'reports' | 'vin' | 'duplicates' | 'appeals' | 'users' | 'removals' | 'audit';
 
 const TABS: { key: ModTab; label: string }[] = [
   { key: 'reports', label: 'Reports' },
   { key: 'vin', label: 'VIN corrections' },
   { key: 'duplicates', label: 'Duplicates' },
+  { key: 'appeals', label: 'Appeals' },
   { key: 'users', label: 'Users' },
   { key: 'removals', label: 'Removal history' },
   { key: 'audit', label: 'Audit log' },

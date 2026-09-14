@@ -16,6 +16,7 @@ const LINKS: { label: string; icon: keyof typeof Feather.glyphMap; href: string 
   { label: 'Saved records', icon: 'bookmark', href: '/account/saved' },
   { label: 'Drafts', icon: 'file-text', href: '/account/drafts' },
   { label: 'Notification preferences', icon: 'bell', href: '/account/notification-settings' },
+  { label: 'Account standing', icon: 'shield', href: '/account/appeals' },
   { label: 'Message privacy', icon: 'lock', href: '/account/message-privacy' },
   { label: 'Blocked users', icon: 'slash', href: '/account/blocked-users' },
   { label: 'Download my data', icon: 'download', href: '/account/download-data' },

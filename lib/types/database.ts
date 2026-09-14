@@ -64,7 +64,12 @@ export type ModerationActionType =
   | 'merge_vehicles'
   | 'approve_correction'
   | 'reject_correction'
-  | 'dismiss_report';
+  | 'dismiss_report'
+  | 'resolve_report'
+  | 'review_report'
+  | 'uphold_appeal'
+  | 'overturn_appeal';
+export type AppealStatus = 'pending' | 'upheld' | 'overturned';
 
 export interface Profile {
   user_id: string;
@@ -348,6 +353,30 @@ export interface ModerationAction {
   notes: string | null;
   expires_at: string | null;
   created_at: string;
+}
+
+export interface Appeal {
+  id: string;
+  moderation_action_id: string;
+  appellant_id: string;
+  statement: string;
+  status: AppealStatus;
+  decided_by: string | null;
+  decided_at: string | null;
+  decision_notes: string | null;
+  created_at: string;
+}
+
+export interface AppealableAction {
+  moderation_action_id: string;
+  target_type: string;
+  target_id: string;
+  action: ModerationActionType;
+  reason: string;
+  created_at: string;
+  appeal_id: string | null;
+  appeal_status: AppealStatus | null;
+  appeal_decision_notes: string | null;
 }
 
 export interface VinCorrectionRequest {

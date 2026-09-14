@@ -58,7 +58,8 @@ export default function Notifications() {
       await markNotificationRead(n.id);
       setNotifications((prev) => prev.map((x) => (x.id === n.id ? { ...x, is_read: true } : x)));
     }
-    if (n.target_type === 'record' && n.target_id) router.push(`/record/${n.target_id}`);
+    if (n.type === 'moderation_update') router.push('/account/appeals');
+    else if (n.target_type === 'record' && n.target_id) router.push(`/record/${n.target_id}`);
     else if (n.target_type === 'vehicle' && n.target_id) router.push(`/record/${n.target_id}`);
     else if (n.target_type === 'user' && n.target_id) {
       const p = profiles.get(n.actor_id ?? '');

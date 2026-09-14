@@ -1,5 +1,5 @@
 import { supabase } from '../supabase';
-import type { Report, ModerationAction, VinCorrectionRequest, DuplicateVehicleRequest, VehicleDetailRevision } from '../types/database';
+import type { Report, ModerationAction, VinCorrectionRequest, DuplicateVehicleRequest, VehicleDetailRevision, Appeal, AppealableAction } from '../types/database';
 
 export async function getReportQueue(status: 'open' | 'reviewing' | 'resolved' | 'dismissed' = 'open'): Promise<Report[]> {
   const { data, error } = await supabase.from('reports').select('*').eq('status', status).order('created_at', { ascending: false });
@@ -118,6 +118,35 @@ export async function getAuditLogs(limit = 50) {
 
 export async function getAllModerationActions(limit = 50): Promise<ModerationAction[]> {
   const { data, error } = await supabase.from('moderation_actions').select('*').order('created_at', { ascending: false }).limit(limit);
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function getModerationActionsByIds(ids: string[]): Promise<ModerationAction[]> {
+  if (ids.length === 0) return [];
+  const { data, error } = await supabase.from('moderation_actions').select('*').in('id', ids);
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function getPendingAppeals(): Promise<Appeal[]> {
+  const { data, error } = await supabase.from('appeals').select('*').eq('status', 'pending').order('created_at', { ascending: false });
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function decideAppeal(appealId: string, status: 'upheld' | 'overturned', notes?: string) {
+  const { error } = await supabase.rpc('rpc_decide_appeal', { p_appeal_id: appealId, p_status: status, p_notes: notes ?? null });
+  if (error) throw error;
+}
+
+export async function submitAppeal(moderationActionId: string, statement: string) {
+  const { error } = await supabase.rpc('rpc_submit_appeal', { p_moderation_action_id: moderationActionId, p_statement: statement });
+  if (error) throw error;
+}
+
+export async function getMyAppealableActions(): Promise<AppealableAction[]> {
+  const { data, error } = await supabase.rpc('rpc_get_my_appealable_actions');
   if (error) throw error;
   return data ?? [];
 }

@@ -24,10 +24,13 @@ import {
   moderateContent,
   getAllModerationActions,
   getAuditLogs,
+  getPendingAppeals,
+  getModerationActionsByIds,
+  decideAppeal,
 } from '../../lib/api/moderation';
 import { searchProfiles } from '../../lib/api/profiles';
 import { getProfilesMap } from '../../lib/api/profiles';
-import type { Report, VinCorrectionRequest, DuplicateVehicleRequest, ModerationAction, Profile } from '../../lib/types/database';
+import type { Report, VinCorrectionRequest, DuplicateVehicleRequest, ModerationAction, Profile, Appeal } from '../../lib/types/database';
 
 export default function ModerationDashboard() {
   const router = useRouter();
@@ -44,6 +47,7 @@ export default function ModerationDashboard() {
       {tab === 'reports' ? <ReportsTab /> : null}
       {tab === 'vin' ? <VinCorrectionsTab /> : null}
       {tab === 'duplicates' ? <DuplicatesTab /> : null}
+      {tab === 'appeals' ? <AppealsTab /> : null}
       {tab === 'users' ? <UsersTab /> : null}
       {tab === 'removals' ? <RemovalsTab /> : null}
       {tab === 'audit' ? <AuditTab /> : null}
@@ -223,6 +227,72 @@ function DuplicatesTab() {
             </View>
           </View>
         ))
+      )}
+    </ScrollView>
+  );
+}
+
+function AppealsTab() {
+  const [appeals, setAppeals] = useState<Appeal[]>([]);
+  const [actions, setActions] = useState<Map<string, ModerationAction>>(new Map());
+  const [appellants, setAppellants] = useState<Map<string, Profile>>(new Map());
+  const [loading, setLoading] = useState(true);
+  const [busyId, setBusyId] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    const list = await getPendingAppeals();
+    setAppeals(list);
+    const [relatedActions, profiles] = await Promise.all([
+      getModerationActionsByIds(list.map((a) => a.moderation_action_id)),
+      getProfilesMap(list.map((a) => a.appellant_id)),
+    ]);
+    setActions(new Map(relatedActions.map((a) => [a.id, a])));
+    setAppellants(profiles);
+  }, []);
+
+  useEffect(() => {
+    load().finally(() => setLoading(false));
+  }, [load]);
+
+  async function handleDecide(id: string, status: 'upheld' | 'overturned') {
+    setBusyId(id);
+    try {
+      await decideAppeal(id, status);
+      setAppeals((prev) => prev.filter((a) => a.id !== id));
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  if (loading) return <ActivityIndicator className="mt-8" color="#62C58F" />;
+
+  return (
+    <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 60 }}>
+      {appeals.length === 0 ? (
+        <EmptyState icon="check-circle" title="No pending appeals" />
+      ) : (
+        appeals.map((a) => {
+          const action = actions.get(a.moderation_action_id);
+          return (
+            <View key={a.id} className="bg-white dark:bg-dark-card rounded-2xl p-4 mb-3 border border-black/5 dark:border-dark-border">
+              <View className="flex-row items-center gap-2">
+                {action ? <Badge label={action.action.replace(/_/g, ' ')} tone="amber" /> : null}
+                {action ? <Badge label={action.target_type} tone="neutral" /> : null}
+              </View>
+              <Text className="text-sm text-charcoal dark:text-dark-text mt-2">
+                Appealed by {appellants.get(a.appellant_id)?.display_name ?? 'a user'} · {relativeTime(a.created_at)}
+              </Text>
+              {action ? (
+                <Text className="text-xs text-asphalt dark:text-dark-textSecondary mt-1">Original reason: {action.reason}</Text>
+              ) : null}
+              <Text className="text-sm text-charcoal dark:text-dark-text mt-2">{a.statement}</Text>
+              <View className="flex-row gap-2 mt-3 flex-wrap">
+                <Button label="Overturn" size="sm" onPress={() => handleDecide(a.id, 'overturned')} loading={busyId === a.id} />
+                <Button label="Uphold" size="sm" variant="outline" onPress={() => handleDecide(a.id, 'upheld')} loading={busyId === a.id} />
+              </View>
+            </View>
+          );
+        })
       )}
     </ScrollView>
   );
