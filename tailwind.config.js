@@ -42,6 +42,8 @@ module.exports = {
           surface: '#1C1F21',
           card: '#242829',
           border: '#33383B',
+          text: '#F2F0EC',
+          textSecondary: '#A7ADB3',
         },
       },
       borderRadius: {
