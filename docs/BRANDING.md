@@ -38,15 +38,16 @@ Contrast: mint-on-charcoal and charcoal/asphalt-on-warm-white were chosen to cle
 
 Vehicle-record categories (maintenance, repair, damage, etc.) each get a consistent color used for timeline filter chips and badges — see `categoryColors` in `lib/theme.ts` and `components/vehicle/TimelineFilterBar.tsx`.
 
-## What still needs a designer/production pass
+## Exported static assets
 
-The code-based logo/wordmark are a complete, usable identity for in-app rendering, but shipping to the App Store / Play Store requires exported static assets a design tool (Figma, Illustrator, etc.) produces more reliably than hand-computed PNG rasterization:
+`scripts/generate-brand-assets.js` renders the assets below from the exact same geometry as `Logo.tsx` (charcoal rounded badge, clipped diagonal mint stripe, centered "RP") via SVG → `sharp`, rather than a hand-drawn approximation. Run `node scripts/generate-brand-assets.js` to regenerate all of them after changing the mark's colors/proportions in `Logo.tsx` — keep the two in sync manually, the same way `lib/theme.ts` and `tailwind.config.js` already have to be.
 
-- [ ] 1024×1024 App Store icon (flatten `Logo.tsx`'s composition to a static PNG)
-- [ ] Android adaptive-icon layers: foreground, background, monochrome (currently placeholder Expo defaults in `assets/`)
-- [ ] Splash screen
-- [ ] Favicon / web app icons at standard sizes (16, 32, 180, 192, 512)
-- [ ] Notification icon (Android requires white-on-transparent monochrome art)
-- [ ] Social share preview image (used as a fallback `og:image` for pages without a vehicle cover photo)
+- [x] **1024×1024 App Store icon** (`assets/icon.png`) — opaque, full-bleed square, no pre-rounding (iOS applies its own corner mask).
+- [x] **Android adaptive-icon layers** (`assets/android-icon-{background,foreground,monochrome}.png`) — the identity mark ("RP") lives in the foreground/monochrome layers only, sized and centered to survive a circular launcher mask (Google's ~66%-of-canvas safe-zone guideline, verified by simulating a circular crop); the background layer carries the charcoal fill + stripe, since a decorative background element doesn't need mask-safety the way the identity mark does.
+- [x] **Splash screen** (`assets/splash-icon.png`) — the full rounded badge on a transparent surround, wired up via the `expo-splash-screen` plugin config in `app.json` (light `backgroundColor: #FBF9F6`, dark `#121415`, matching `lib/theme.ts`). A thin mint stroke was added around the badge's rounded edge specifically for dark mode — without it, the badge's charcoal fill (`#1A1D1F`) nearly disappears against the app's near-black dark background (`#121415`); with it, the badge is legible in both themes from one asset.
+- [x] **Notification icon** (`assets/android-icon-monochrome.png`, already wired in `app.json`'s `expo-notifications` plugin config) — same white-on-transparent "RP" silhouette as the adaptive-icon monochrome layer; one asset satisfies both requirements.
+- [x] **Favicon** (`assets/favicon.png`) — same rounded badge as the splash icon, rasterized at 512×512; modern browsers scale a single PNG favicon down cleanly, so this covers the classic-favicon through high-DPI range without needing a multi-file `.ico`.
+- [ ] **Full web/PWA icon manifest set at each standard size** (16, 32, 180 apple-touch-icon, 192/512 PWA) — Expo's `web.favicon` config field only accepts one file; a real multi-size set needs either per-size files wired into a custom `public/` output or a PWA manifest generator, which wasn't attempted here.
+- [ ] **Social share preview image** (`og:image` fallback) — needs locating/adding the actual Open Graph meta-tag hook for Expo Router's web output (likely a root `app/+html.tsx`), which wasn't investigated in this pass.
 
-Until those are produced, `app.json` points at the default Expo-template placeholder images so builds don't fail — see `docs/LAUNCH_CHECKLIST.md`.
+These are still a faithful **placeholder** upgrade over the generic Expo-template images that were there before, not a substitute for a real design-tool pass (see the top of this doc) — in particular the "RP" glyph is set in a system sans fallback available on the machine that rendered it (Liberation Sans), not whatever font a real brand pass would choose, and the exact stripe/badge proportions are a literal reproduction of `Logo.tsx`'s current values, unreviewed by a designer.

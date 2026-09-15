@@ -34,7 +34,7 @@ Full setup instructions: **[docs/SETUP.md](docs/SETUP.md)**. Deployment (EAS bui
 
 Documented explicitly rather than silently shipped:
 
-- **App-store-ready icon/splash assets** — the RP mark and wordmark are implemented as real components (`components/brand/`), not yet exported as static PNGs at required sizes. See `docs/BRANDING.md`.
+- **Web/PWA icon manifest set and social share preview image** — the app icon, Android adaptive icon, splash screen, notification icon, and favicon are now real exported PNGs generated from the actual brand components (`scripts/generate-brand-assets.js`, see `docs/BRANDING.md`); a full multi-size web/PWA manifest and the `og:image` social-share fallback are the two pieces of that gap still open.
 - **External VIN-decode provider** — `lib/services/vin-provider.ts` defines the swappable interface and ships a local-only fallback that never guesses specs, exactly as specified; no provider is wired in since none was licensed.
 - **Legal documents** — `docs/legal/*.md` are structured, feature-accurate drafts, explicitly flagged as requiring professional legal review before publication.
 - **Native builds** — this environment can build/typecheck/test the app and produce a working web export, but can't produce signed iOS/Android binaries; `docs/DEPLOYMENT.md` covers the EAS Build steps to do that from a machine with Apple/Google credentials.
